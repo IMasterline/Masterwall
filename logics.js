@@ -6,13 +6,5 @@
 //Http.send();
 
 
-var currentscore = 10
-
-
-if (currentscore == 10){
-	chrome.action.setPopup(
-		details: "test.html",
-	)
-	alert();
-	currentscore--
-}
+var score = 10
+chrome.storage.local.set({score: score});
