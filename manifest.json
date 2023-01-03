@@ -13,7 +13,7 @@
     "128": "images/icon-128.png"
   },
   "action": {
-    "default_popup": "hello.html",
+    "default_popup": "popups/safe.html"
   },
   "permissions": [
     "tabs",
