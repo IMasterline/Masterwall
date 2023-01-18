@@ -1,6 +1,7 @@
+
 //variables
 var score = 5
-var isblacklisted = true
+var isblacklisted = false
 
 //on tab change: set correct popup
 chrome.tabs.onActivated.addListener(function (changepopup) {
@@ -20,3 +21,4 @@ chrome.tabs.onActivated.addListener(function (changepopup) {
 		chrome.action.setPopup({ popup: "popups/blacklisted.html"})
 	}
 });
+
