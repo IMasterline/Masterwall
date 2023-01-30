@@ -31,9 +31,10 @@ def insert(url):
     #create cursor
     cur = con.cursor()
     #commands section
-    
+    print(url)
     cur.execute("SELECT * FROM blacklist WHERE URL='" + url + "'")
-    if cur.rowcount:
+    if len(cur.fetchall()) > 0:
+        print(cur.fetchall())
         print("already in table")
     else:
         cur.execute("INSERT INTO blacklist VALUES (?, ?)", (random.randint(1, 999999), url))
