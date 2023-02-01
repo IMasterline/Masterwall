@@ -37,7 +37,7 @@ def insert(url):
         print(cur.fetchall())
         print("already in table")
     else:
-        cur.execute("INSERT INTO blacklist VALUES (?, ?)", (random.randint(1, 999999), url))
+        cur.execute("INSERT INTO blacklist (URL) VALUES (?)", (url, ))
 
     #save and close connection
     con.commit()
