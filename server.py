@@ -25,7 +25,7 @@ def index():
     return (request.args.get("name"))
     
 @app.route("/addToBlacklist/<url>", methods=["post"])
-def insert(url):
+def insertToBlacklist(url):
     #connect to db
     con = sqlite3.connect("db.db")
     #create cursor
@@ -44,5 +44,30 @@ def insert(url):
     con.close()
     
     return jsonify({"code": "200"})
+    
+    
+
+@app.route("/addToReported/<url>", methods=["post"])
+def insertToReported(url):
+    #connect to db
+    con = sqlite3.connect("db.db")
+    #create cursor
+    cur = con.cursor()
+    #commands section
+    print(url)
+    cur.execute("SELECT * FROM reported WHERE URL='" + url + "'")
+    if len(cur.fetchall()) > 0:
+        print(cur.fetchall())
+        cur.execute("UPDATE reported SET reports = reports + 1 WHERE URL='" + url + "'")
+        print("reports += 1")
+    else:
+        cur.execute("INSERT INTO reported (URL,reports) VALUES (?,?)", (url,0))
+
+    #save and close connection
+    con.commit()
+    con.close()
+    
+    return jsonify({"code": "200"})
+
     
 app.run(host="localhost", debug=True, port=8080)
