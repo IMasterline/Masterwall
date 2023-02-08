@@ -68,6 +68,27 @@ def insertToReported(url):
     con.close()
     
     return jsonify({"code": "200"})
+    
+    
+@app.route("/checkBlacklist/<url>", methods=["post"])
+def checkBlacklistDB(url):
+    #connect to db
+    con = sqlite3.connect("db.db")
+    #create cursor
+    cur = con.cursor()
+    #commands section
+    print(url)
+    cur.execute("SELECT * FROM blacklist WHERE URL='" + url + "'")
+    if len(cur.fetchall()) > 0:
+        print("website is in blacklist")
+        return jsonify({"code": "200"})
+    else:
+        print("website is not in blacklist")
+        return jsonify({"code": "200"})
+
+    #save and close connection
+    con.commit()
+    con.close()
 
     
 app.run(host="localhost", debug=True, port=8080)
