@@ -19,6 +19,15 @@ con.close()
 #server website creator
 app = Flask(__name__)
 
+spamcooldown = 0
+
+async def reducecooldown():
+    global spamcooldown
+    while (spamcooldown > 0):
+        spamcooldown = spamcooldown - 1
+
+
+
 @app.route("/")
 def index():
     print(request.args.get("name"))
@@ -49,19 +58,24 @@ def insertToBlacklist(url):
 
 @app.route("/addToReported/<url>", methods=["post"])
 def insertToReported(url):
-    #connect to db
-    con = sqlite3.connect("db.db")
-    #create cursor
-    cur = con.cursor()
-    #commands section
-    print(url)
-    cur.execute("SELECT * FROM reported WHERE URL='" + url + "'")
-    if len(cur.fetchall()) > 0:
-        print(cur.fetchall())
-        cur.execute("UPDATE reported SET reports = reports + 1 WHERE URL='" + url + "'")
-        print("reports += 1")
+    global spamcooldown
+    if (spamcooldown == 0):
+        #connect to db
+        con = sqlite3.connect("db.db")
+        #create cursor
+        cur = con.cursor()
+        #commands section
+        print(url)
+        cur.execute("SELECT * FROM reported WHERE URL='" + url + "'")
+        if len(cur.fetchall()) > 0:
+            print(cur.fetchall())
+            cur.execute("UPDATE reported SET reports = reports + 1 WHERE URL='" + url + "'")
+            print("reports += 1")
+            spamcooldown = 60
+        else:
+            cur.execute("INSERT INTO reported (URL,reports) VALUES (?,?)", (url,1))
     else:
-        cur.execute("INSERT INTO reported (URL,reports) VALUES (?,?)", (url,0))
+        print("on cooldown")
 
     #save and close connection
     con.commit()
