@@ -1,12 +1,19 @@
 //variables
 var score = 10
-var isblacklisted = false
-
+var isblacklisted = 0
 //on tab change: set correct popup
 chrome.tabs.onActivated.addListener(function (changepopup) {
 	
 	
 	
+	
+	
+	console.log(isblacklisted)
+	fetch("data.json")
+		.then(response => response.json())
+		.then(data => {
+			isblacklisted = data.isblacklisted
+		});
 	
 	
 	
@@ -22,7 +29,7 @@ chrome.tabs.onActivated.addListener(function (changepopup) {
 	if (score == 1){
 		chrome.action.setPopup({ popup: "popups/scam.html"})
 	}
-	if (isblacklisted == true){
+	if (isblacklisted == 1){
 		chrome.action.setPopup({ popup: "popups/blacklisted.html"})
 	}
 });
