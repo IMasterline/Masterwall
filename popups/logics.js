@@ -1,4 +1,4 @@
- var  bgp = chrome.extension.getBackgroundPage()
+ var bgp = chrome.extension.getBackgroundPage()
  document.addEventListener('DOMContentLoaded', function () {
     
     var btblacklist = document.getElementById("btblacklist");
@@ -31,6 +31,19 @@ function reportWebsite(){
 	var pathArray = tabs[0].url.split( '/' );
 	var host = pathArray[2];
 	xhr.open('post','http://localhost:8080/addToReported/' + host, true);
+	xhr.send();
+	
+	});
+}
+
+function checkBlacklist(){
+	chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
+    // use `url` here inside the callback because it's asynchronous!
+	
+	var xhr = new XMLHttpRequest();
+	var pathArray = tabs[0].url.split( '/' );
+	var host = pathArray[2];
+	xhr.open('post','http://localhost:8080/checkBlacklist/' + host, true);
 	xhr.send();
 	
 	});
