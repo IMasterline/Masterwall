@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
+import json
 import sqlite3
 import random
 
@@ -19,6 +20,7 @@ con.close()
 #server website creator
 app = Flask(__name__)
 
+isblacklisted = 0
 spamcooldown = 0
 
 async def reducecooldown():
@@ -95,14 +97,27 @@ def checkBlacklistDB(url):
     cur.execute("SELECT * FROM blacklist WHERE URL='" + url + "'")
     if len(cur.fetchall()) > 0:
         print("website is in blacklist")
+        isblacklisted = 1
         return jsonify({"code": "200"})
     else:
         print("website is not in blacklist")
+        isblacklisted = 0
         return jsonify({"code": "200"})
 
     #save and close connection
     con.commit()
     con.close()
+    
+    
+    
+#pass variables to js
+data = {
+    "isblacklisted": isblacklisted
+}
+with open("data.json", "w") as f:
+    json.dump(data, f)
 
+
+    
     
 app.run(host="localhost", debug=True, port=8080)
