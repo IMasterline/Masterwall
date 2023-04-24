@@ -103,19 +103,20 @@ def checkBlacklistDB(url):
         print("website is not in blacklist")
         isblacklisted = 0
         return jsonify({"code": "200"})
+    
+    
+    #pass variables to js
+    data = {
+        "isblacklisted": isblacklisted
+    }
+    with open("data.json", "w") as f:
+        json.dump(data, f)
 
     #save and close connection
     con.commit()
     con.close()
     
     
-    
-#pass variables to js
-data = {
-    "isblacklisted": isblacklisted
-}
-with open("data.json", "w") as f:
-    json.dump(data, f)
 
 
     
