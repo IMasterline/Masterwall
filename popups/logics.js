@@ -35,16 +35,3 @@ function reportWebsite(){
 	
 	});
 }
-
-function checkBlacklist(){
-	chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
-    // use `url` here inside the callback because it's asynchronous!
-	
-	var xhr = new XMLHttpRequest();
-	var pathArray = tabs[0].url.split( '/' );
-	var host = pathArray[2];
-	xhr.open('post','http://localhost:8080/checkBlacklist/' + host, true);
-	xhr.send();
-	
-	});
-}
