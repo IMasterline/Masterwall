@@ -21,6 +21,7 @@ con.close()
 app = Flask(__name__)
 
 isblacklisted = 0
+reportscount = 0
 spamcooldown = 0
 
 async def reducecooldown():
@@ -108,6 +109,42 @@ def checkBlacklistDB(url):
     #pass variables to js
     data = {
         "isblacklisted": isblacklisted
+    }
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    #save and close connection
+    con.commit()
+    con.close()
+    
+    
+    
+@app.route("/checkReported/<url>", methods=["post"])
+def checkReportedDB(url):
+    #connect to db
+    con = sqlite3.connect("db.db")
+    #create cursor
+    cur = con.cursor()
+    #commands section
+    print(url)
+    cur.execute("SELECT value FROM reported WHERE URL='" + url + "'")
+    result = cursor.fetchone()
+    
+    if result is not None:
+        print("website has been reported")
+        reportscount = result[0]
+        return jsonify({"code": "200"})
+        
+    else:
+        # Handle the case where id does not exist in the table
+        reportscount = 0  # or set a default value
+        print("website has not been reported")
+        return jsonify({"code": "200"})
+    
+    
+    #pass variables to js
+    data = {
+        "reportscount": reportscount
     }
     with open("data.json", "w") as f:
         json.dump(data, f)
