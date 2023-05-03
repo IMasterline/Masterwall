@@ -7,21 +7,24 @@ chrome.tabs.onActivated.addListener(function (changepopup) {
 	
 	chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
     // use `url` here inside the callback because it's asynchronous!
+	import { XMLHttpRequest } from 'xmlhttprequest';
 	
 	var xhr = new XMLHttpRequest();
 	var pathArray = tabs[0].url.split( '/' );
 	var host = pathArray[2];
-	xhr.open('post','http://localhost:8080/checkBlacklist/' + host, true);
+	xhr.open('post','http://localhost:8080/checkReported/' + host, true);
 	xhr.send();
 	
+	});
 	
 	
 	
-	console.log(isblacklisted)
+	
 	fetch("data.json")
 		.then(response => response.json())
 		.then(data => {
-			isblacklisted = data.isblacklisted
+			reportscount = data.reportscount
+			console.log(reportscount)
 		});
 	
 	
@@ -48,5 +51,3 @@ chrome.tabs.onActivated.addListener(function (changepopup) {
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Service Worker installed.');
 });
-
-
