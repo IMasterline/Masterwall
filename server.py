@@ -77,12 +77,12 @@ def insertToReported(url):
             spamcooldown = 60
         else:
             cur.execute("INSERT INTO reported (URL,reports) VALUES (?,?)", (url,1))
+        
+        #save and close connection
+        con.commit()
+        con.close()
     else:
         print("on cooldown")
-
-    #save and close connection
-    con.commit()
-    con.close()
     
     return jsonify({"code": "200"})
     
@@ -121,37 +121,34 @@ def checkBlacklistDB(url):
     
 @app.route("/checkReported/<url>", methods=["post"])
 def checkReportedDB(url):
-    #connect to db
-    con = sqlite3.connect("db.db")
-    #create cursor
-    cur = con.cursor()
-    #commands section
-    print(url)
-    cur.execute("SELECT value FROM reported WHERE URL='" + url + "'")
-    result = cursor.fetchone()
     
-    if result is not None:
-        print("website has been reported")
-        reportscount = result[0]
-        return jsonify({"code": "200"})
-        
-    else:
-        # Handle the case where id does not exist in the table
-        reportscount = 0  # or set a default value
-        print("website has not been reported")
-        return jsonify({"code": "200"})
-    
-    
-    #pass variables to js
-    data = {
-        "reportscount": reportscount
-    }
-    with open("data.json", "w") as f:
-        json.dump(data, f)
+    hostname = request.json.get('hostname', '')
+    if hostname:
+        print(f'Received hostname: {hostname}')
 
-    #save and close connection
-    con.commit()
-    con.close()
+        #connect to db
+        con = sqlite3.connect("db.db")
+        #create cursor
+        cur = con.cursor()
+        #commands section
+        print(url)
+        cur.execute("SELECT value FROM reported WHERE URL='" + url + "'")
+        result = cursor.fetchone()
+    
+        if result is not None:
+            print("website has been reported")
+            reportscount = result[0]
+            return jsonify({"reportscount": "reportscount"})
+        
+        else:
+            # Handle the case where id does not exist in the table
+            reportscount = 0  # or set a default value
+            print("website has not been reported")
+            return jsonify({"reportscount": "reportscount"})
+    
+        #save and close connection
+        con.commit()
+        con.close()
     
     
 
