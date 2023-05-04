@@ -1,51 +1,65 @@
 //variables
-var score = 10
+var reportscount = 0
 var isblacklisted = 0
-//on tab change: set correct popup
-chrome.tabs.onActivated.addListener(function (changepopup) {
+let prevHostname = "";
+
+
+function changepopup() {
 	
-	
-	chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
-    // use `url` here inside the callback because it's asynchronous!
-	import { XMLHttpRequest } from 'xmlhttprequest';
-	
-	var xhr = new XMLHttpRequest();
-	var pathArray = tabs[0].url.split( '/' );
-	var host = pathArray[2];
-	xhr.open('post','http://localhost:8080/checkReported/' + host, true);
-	xhr.send();
-	
-	});
-	
-	
-	
-	
-	fetch("data.json")
-		.then(response => response.json())
-		.then(data => {
-			reportscount = data.reportscount
-			console.log(reportscount)
-		});
-	
-	
-	
-	if (score == 10){
+	if (reportscount == 0){
 		chrome.action.setPopup({ popup: "popups/safe.html"})
 	}	
-	if (score <= 9 && score >= 6){
+	if (reportscount == 1){
 		chrome.action.setPopup({ popup: "popups/risky.html"})
 	}
-	if (score <= 5 && score >= 2){
+	if (reportscount == 2){
 		chrome.action.setPopup({ popup: "popups/unsafe.html"})
 	}
-	if (score == 1){
+	if (reportscount == 3){
 		chrome.action.setPopup({ popup: "popups/scam.html"})
 	}
 	if (isblacklisted == 1){
 		chrome.action.setPopup({ popup: "popups/blacklisted.html"})
 	}
+}
+
+
+// Add an event listener
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+	// Get the URL of the new website
+	var newHostname = new URL(changeInfo.url).hostname;
+
+	// Compare with the previous hostname
+	if (newHostname !== prevHostname) {
+		// The user has navigated to a different website
+
+		// Update the previous hostname variable
+		prevHostname = newHostname;
+	  
+	  
+		// Send a message to the server with the new hostname
+		fetch('http://localhost:8080/update', {
+			method: 'POST',
+			headers: {
+			'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({hostname: newHostname})
+		})
+		.then(response => response.json())
+		.then(data => {
+			// Log the integer to the console
+			console.log(`Received response: ${response}`);
+			reportscount = data.reportscount;
+		});
+	}
+	
+	//on tab change: set correct popup
+	changepopup();
 });
 
+
+
+//copy same code for tab on activated
 
 
 chrome.runtime.onInstalled.addListener(() => {
