@@ -24,42 +24,55 @@ function changepopup() {
 }
 
 
-// Add an event listener
+
+
+
+// Add event listeners for URL changes and tab changes
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-	// Get the URL of the new website
-	var newHostname = new URL(changeInfo.url).hostname;
-
-	// Compare with the previous hostname
-	if (newHostname !== prevHostname) {
-		// The user has navigated to a different website
-
-		// Update the previous hostname variable
-		prevHostname = newHostname;
-	  
-	  
-		// Send a message to the server with the new hostname
-		fetch('http://localhost:8080/update', {
-			method: 'POST',
-			headers: {
-			'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({hostname: newHostname})
-		})
-		.then(response => response.json())
-		.then(data => {
-			// Log the integer to the console
-			console.log(`Received response: ${response}`);
-			reportscount = data.reportscount;
-		});
-	}
-	
-	//on tab change: set correct popup
-	changepopup();
+  checkUrlChange(changeInfo.url);
 });
 
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  chrome.tabs.get(activeInfo.tabId, (tab) => {
+    checkUrlChange(tab.url);
+  });
+});
+
+// Define a function to check for URL changes
+function checkUrlChange(url) {
+  if (url) {
+    // Get the hostname of the new website
+    var newHostname = new URL(url).hostname;
+
+    // Compare with the previous hostname
+    if (newHostname !== prevHostname) {
+      // The user has navigated to a different website
+
+      // Update the previous hostname variable
+      prevHostname = newHostname;
+
+      // Send a message to the server with the new hostname
+      fetch('http://localhost:8080/checkReported', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({hostname: newHostname})
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Log the reportscount to the console
+        console.log(`Received response: ${data.reportscount}`);
+        reportscount = data.reportscount;
+      });
+    }
+  }
+
+  // Update the popup
+  changepopup();
+}
 
 
-//copy same code for tab on activated
 
 
 chrome.runtime.onInstalled.addListener(() => {
