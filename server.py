@@ -119,36 +119,33 @@ def checkBlacklistDB(url):
     
     
     
-@app.route("/checkReported/<url>", methods=["post"])
-def checkReportedDB(url):
-    
+@app.route("/checkReported", methods=["POST"])
+def checkReportedDB():
     hostname = request.json.get('hostname', '')
     if hostname:
         print(f'Received hostname: {hostname}')
 
-        #connect to db
+        # Connect to db
         con = sqlite3.connect("db.db")
-        #create cursor
+        # Create cursor
         cur = con.cursor()
-        #commands section
-        print(url)
-        cur.execute("SELECT value FROM reported WHERE URL='" + url + "'")
-        result = cursor.fetchone()
-    
-        if result is not None:
-            print("website has been reported")
-            reportscount = result[0]
-            return jsonify({"reportscount": "reportscount"})
-        
-        else:
-            # Handle the case where id does not exist in the table
-            reportscount = 0  # or set a default value
-            print("website has not been reported")
-            return jsonify({"reportscount": "reportscount"})
-    
-        #save and close connection
-        con.commit()
+        # Execute SQL command
+        cur.execute("SELECT reports FROM reported WHERE URL=?", (hostname,))
+        result = cur.fetchone()
+        # Close connection
         con.close()
+
+        if result is not None:
+            # The website has been reported
+            reportscount = result[0]
+            print("Website has been reported")
+            return jsonify({"reportscount": reportscount})
+        else:
+            # Handle the case where the website has not been reported
+            reportscount = 0
+            print("Website has not been reported")
+            return jsonify({"reportscount": reportscount})
+
     
     
 
