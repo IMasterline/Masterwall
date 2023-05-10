@@ -6,16 +6,16 @@ let prevHostname = "";
 
 function changepopup() {
 	
-	if (reportscount == 0){
+	if (reportscount < 20){
 		chrome.action.setPopup({ popup: "popups/safe.html"})
 	}	
-	if (reportscount == 1){
+	if (reportscount >= 20 && reportscount < 50){
 		chrome.action.setPopup({ popup: "popups/risky.html"})
 	}
-	if (reportscount == 2){
+	if (reportscount >= 50 && reportscount < 200){
 		chrome.action.setPopup({ popup: "popups/unsafe.html"})
 	}
-	if (reportscount == 3){
+	if (reportscount > 200){
 		chrome.action.setPopup({ popup: "popups/scam.html"})
 	}
 	if (isblacklisted == 1){
@@ -64,12 +64,10 @@ function checkUrlChange(url) {
         // Log the reportscount to the console
         console.log(`Received response: ${data.reportscount}`);
         reportscount = data.reportscount;
+	changepopup(); // Update the popup with the new reportscount
       });
     }
   }
-
-  // Update the popup
-  changepopup();
 }
 
 
