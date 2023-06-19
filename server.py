@@ -1,147 +1,116 @@
-from flask import Flask, request, jsonify, render_template
+import hashlib
 import json
 import sqlite3
-import random
 import requests
+from flask import Flask, request, jsonify
+from werkzeug.local import Local
 
-"""
-#connect to db
-con = sqlite3.connect("db.db")
-#create cursor
-cur = con.cursor()
-#commands section
-cur.execute("CREATE TABLE reported(url TEXT PRIMARY KEY, count INTEGER)")
+class Server:
+    def __init__(self):
+        self.app = Flask(__name__)
+        self.db = Local()
 
-#save and close connection
-con.commit()
-con.close()
-"""
+    def __del__(self):
+        if hasattr(self.db, 'connection'):
+            self.db.connection.close()
 
+    def get_db(self):
+        if not hasattr(self.db, 'connection'):
+            self.db.connection = sqlite3.connect("db.db")
+        return self.db.connection
 
-#server website creator
-app = Flask(__name__)
+    def index(self):
+        print(request.args.get("name"))
+        return request.args.get("name")
 
-isblacklisted = 0
-reportscount = 0
+    def insertToBlacklist(self, url):
+        ip = requests.get('https://api.ipify.org').text
+        hashed_ip = hashlib.sha256(ip.encode()).hexdigest()
 
-
-@app.route("/")
-def index():
-    print(request.args.get("name"))
-    return (request.args.get("name"))
-    
-@app.route("/addToBlacklist/<url>", methods=["post"])
-def insertToBlacklist(url):
-    #connect to db
-    con = sqlite3.connect("db.db")
-    #create cursor
-    cur = con.cursor()
-    #commands section
-    print(url)
-    cur.execute("SELECT * FROM blacklist WHERE URL='" + url + "'")
-    if len(cur.fetchall()) > 0:
-        print(cur.fetchall())
-        print("already in table")
-    else:
-        cur.execute("INSERT INTO blacklist (URL) VALUES (?)", (url, ))
-        print("website blacklisted")
-
-    #save and close connection
-    con.commit()
-    con.close()
-    
-    return jsonify({"code": "200"})
-    
-    
-
-@app.route("/addToReported/<url>", methods=["post"])
-def insertToReported(url):
-    # get the public IP address of the client
-    ip = requests.get('https://api.ipify.org').text
-    # connect to db
-    con = sqlite3.connect("db.db")
-    # create cursor
-    cur = con.cursor()
-    # commands section
-    cur.execute("SELECT * FROM reported WHERE URL=? AND IP=?", (url, ip))
-    if len(cur.fetchall()) > 0:
-        # user has already reported this URL
-        con.close()
-        print("This IP range has already reported this URL.")
-        return jsonify({"error": "You have already reported this URL."})
-    else:
-        cur.execute("INSERT INTO reported (URL, IP) VALUES (?,?)", (url, ip))
-        print("URL has been reported")
-        # save and close connection
-        con.commit()
-        con.close()
-        return jsonify({"code": "200"})
-
-    
-    
-@app.route("/checkBlacklist/<url>", methods=["post"])
-def checkBlacklistDB(url):
-    #connect to db
-    con = sqlite3.connect("db.db")
-    #create cursor
-    cur = con.cursor()
-    #commands section
-    print(url)
-    cur.execute("SELECT * FROM blacklist WHERE URL='" + url + "'")
-    if len(cur.fetchall()) > 0:
-        print("website is in blacklist")
-        isblacklisted = 1
-        return jsonify({"code": "200"})
-    else:
-        print("website is not in blacklist")
-        isblacklisted = 0
-        return jsonify({"code": "200"})
-    
-    
-    #pass variables to js
-    data = {
-        "isblacklisted": isblacklisted
-    }
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
-    #save and close connection
-    con.commit()
-    con.close()
-    
-    
-    
-@app.route("/checkReported", methods=["POST"])
-def checkReportedDB():
-    hostname = request.json.get('hostname', '')
-    if hostname:
-        print(f'Received hostname: {hostname}')
-
-        # Connect to db
-        con = sqlite3.connect("db.db")
-        # Create cursor
+        con = self.get_db()
         cur = con.cursor()
-        # Execute SQL command
-        cur.execute("SELECT COUNT(*) FROM reported WHERE URL=?", (hostname,))
-        result = cur.fetchone()[0]
-        # Close connection
-        con.close()
 
-        if result > 0:
-            # The website has been reported
-            reportscount = result
-            print("Website has been reported")
-            return jsonify({"reportscount": reportscount})
+        cur.execute("SELECT * FROM blacklist WHERE URL=? AND IP=?", (url, hashed_ip))
+        if len(cur.fetchall()) > 0:
+            print("website removed from blacklist")
+            cur.execute("DELETE FROM blacklist WHERE URL=? AND IP=?", (url, hashed_ip))
         else:
-            # Handle the case where the website has not been reported
-            reportscount = 0
-            print("Website has not been reported")
-            return jsonify({"reportscount": reportscount})
+            cur.execute("INSERT INTO blacklist (URL, IP) VALUES (?,?)", (url, hashed_ip))
+            print("website blacklisted")
 
-    
-    
+        con.commit()
+        return jsonify({"code": "200"})
 
+    def insertToReported(self, url):
+        ip = requests.get('https://api.ipify.org').text
+        hashed_ip = hashlib.sha256(ip.encode()).hexdigest()
 
-    
-    
-app.run(host="localhost", debug=True, port=8080)
+        con = self.get_db()
+        cur = con.cursor()
+
+        cur.execute("SELECT * FROM reported WHERE URL=? AND IP=?", (url, hashed_ip))
+        if len(cur.fetchall()) > 0:
+            con.close()
+            print("This IP range has already reported this URL.")
+            return jsonify({"error": "You have already reported this URL."})
+        else:
+            cur.execute("INSERT INTO reported (URL, IP) VALUES (?,?)", (url, hashed_ip))
+            print("URL has been reported")
+
+        con.commit()
+        return jsonify({"code": "200"})
+
+    def checkBlacklistDB(self):
+        hostname = request.json.get('hostname', '')
+        if hostname:
+            print(f'Received hostname: {hostname}')
+
+            ip = requests.get('https://api.ipify.org').text
+            hashed_ip = hashlib.sha256(ip.encode()).hexdigest()
+
+            con = self.get_db()
+            cur = con.cursor()
+
+            cur.execute("SELECT COUNT(*) FROM blacklist WHERE URL=? AND IP=?", (hostname, hashed_ip))
+            result = cur.fetchone()[0]
+
+            if result > 0:
+                print("website is in blacklist")
+                isblacklisted = 1
+                return jsonify({"isblacklisted": isblacklisted})
+            else:
+                print("website is not in blacklist")
+                isblacklisted = 0
+                return jsonify({"isblacklisted": isblacklisted})
+
+    def checkReportedDB(self):
+        hostname = request.json.get('hostname', '')
+        if hostname:
+            print(f'Received hostname: {hostname}')
+
+            con = self.get_db()
+            cur = con.cursor()
+
+            cur.execute("SELECT COUNT(*) FROM reported WHERE URL=?", (hostname,))
+            result = cur.fetchone()[0]
+            con.close()
+
+            if result > 0:
+                reportscount = result
+                print("Reports count is " + str(reportscount))
+                return jsonify({"reportscount": reportscount})
+            else:
+                reportscount = 0
+                print("Reports count is 0")
+                return jsonify({"reportscount": reportscount})
+
+    def run(self):
+        self.app.route("/")(self.index)
+        self.app.route("/addToBlacklist/<url>", methods=["POST"])(self.insertToBlacklist)
+        self.app.route("/addToReported/<url>", methods=["POST"])(self.insertToReported)
+        self.app.route("/checkBlacklist", methods=["POST"])(self.checkBlacklistDB)
+        self.app.route("/checkReported", methods=["POST"])(self.checkReportedDB)
+        self.app.run(host="localhost", debug=True, port=8080)
+
+server = Server()
+server.run()
