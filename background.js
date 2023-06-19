@@ -4,39 +4,55 @@ var isblacklisted = 0
 let prevHostname = "";
 
 
-function changepopup() {
-	
-	if (reportscount < 20){
-		chrome.action.setPopup({ popup: "popups/safe.html"})
-	}	
-	if (reportscount >= 20 && reportscount < 50){
-		chrome.action.setPopup({ popup: "popups/risky.html"})
-	}
-	if (reportscount >= 50 && reportscount < 200){
-		chrome.action.setPopup({ popup: "popups/unsafe.html"})
-	}
-	if (reportscount > 200){
-		chrome.action.setPopup({ popup: "popups/scam.html"})
-	}
-	if (isblacklisted == 1){
-		chrome.action.setPopup({ popup: "popups/blacklisted.html"})
-	}
+class PopupChanger {
+  constructor(reportscount, isblacklisted) {
+    this.reportscount = reportscount;
+    this.isblacklisted = isblacklisted;
+  }
+
+  changePopup() {
+    if (this.reportscount < 20) {
+      chrome.action.setPopup({ popup: "popups/safe.html" });
+    }
+    if (this.reportscount >= 20 && this.reportscount < 50) {
+      chrome.action.setPopup({ popup: "popups/risky.html" });
+    }
+    if (this.reportscount >= 50 && this.reportscount < 200) {
+      chrome.action.setPopup({ popup: "popups/unsafe.html" });
+    }
+    if (this.reportscount > 200) {
+      chrome.action.setPopup({ popup: "popups/scam.html" });
+    }
+    if (this.isblacklisted === 1) {
+      chrome.action.setPopup({ popup: "popups/blacklisted.html" });
+    }
+  }
 }
 
 
 
 
 
-// Add event listeners for URL changes and tab changes
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  checkUrlChange(changeInfo.url);
-});
 
-chrome.tabs.onActivated.addListener((activeInfo) => {
-  chrome.tabs.get(activeInfo.tabId, (tab) => {
-    checkUrlChange(tab.url);
-  });
-});
+class TabChangeListener {
+  constructor() {
+    chrome.tabs.onUpdated.addListener(this.handleTabUpdated);
+    chrome.tabs.onActivated.addListener(this.handleTabActivated);
+  }
+
+  handleTabUpdated(tabId, changeInfo, tab) {
+    this.checkUrlChange(changeInfo.url);
+  }
+
+  handleTabActivated(activeInfo) {
+    chrome.tabs.get(activeInfo.tabId, (tab) => {
+      this.checkUrlChange(tab.url);
+    });
+  }
+}
+
+const tabChangeListener = new TabChangeListener();
+
 
 // Define a function to check for URL changes
 function checkUrlChange(url) {
@@ -63,8 +79,26 @@ function checkUrlChange(url) {
       .then(data => {
         // Log the reportscount to the console
         console.log(`Received response: ${data.reportscount}`);
-        reportscount = data.reportscount;
-	changepopup(); // Update the popup with the new reportscount
+        reportscount = data.reportscount;	
+	  })
+		
+		
+		
+	// Send a message to the server with the new hostname
+      fetch('http://localhost:8080/checkBlacklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({hostname: newHostname})
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Log the isblacklisted to the console
+        console.log(`Received response: ${data.isblacklisted}`);
+        isblacklisted = data.isblacklisted;
+		const popupChanger = new PopupChanger(reportscount, isblacklisted);
+		popupChanger.changePopup(); // Update the popup
       });
     }
   }
